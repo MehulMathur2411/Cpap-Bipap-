@@ -1,0 +1,7 @@
+{
+    "admin@deckmount.com": {
+        "name": "Admin",
+        "password": "admin123",
+        "admin": true
+    }
+}

@@ -1,0 +1,58 @@
+{
+    "T": {
+        "IPAP": 10.0,
+        "EPAP": 10.0,
+        "Start EPAP": 10.0,
+        "Respiratory Rate": 10,
+        "Ti.Min": 1.0,
+        "Ti.Max": 1.0,
+        "Rise Time": 200
+    },
+    "Settings": {
+        "Ramp Time": 5,
+        "Humidifier": 1,
+        "Mask Type": "Nasal",
+        "IMODE": "ON",
+        "Leak Alert": "OFF",
+        "Gender": "Male",
+        "Sleep Mode": "ON"
+    },
+    "ST": {
+        "IPAP": 10.0,
+        "EPAP": 10.0,
+        "Start EPAP": 10.0,
+        "Backup Rate": 10,
+        "Ti.Min": 1.0,
+        "Ti.Max": 1.0,
+        "Sensitivity": 10,
+        "Rise Time": 200
+    },
+    "AutoCPAP": {
+        "Min Pressure": 14.5,
+        "Max Pressure": 20
+    },
+    "S": {
+        "IPAP": 10.0,
+        "EPAP": 10.0,
+        "Start EPAP": 10.0,
+        "Ti.Min": 1.0,
+        "Ti.Max": 1.0,
+        "Sensitivity": 10,
+        "Rise Time": 10
+    },
+    "VAPS": {
+        "Height": 170,
+        "Tidal Volume": 500,
+        "Max IPAP": 10.0,
+        "Min IPAP": 10.0,
+        "EPAP": 10.0,
+        "Respiratory Rate": 10,
+        "Ti.Min": 1.0,
+        "Ti.Max": 1.0,
+        "Rise Time": 200,
+        "Sensitivity": 1
+    },
+    "CPAP": {
+        "Set Pressure": 10.0
+    }
+}
