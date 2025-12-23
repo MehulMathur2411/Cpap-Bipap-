@@ -11,15 +11,13 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor, QPainter, QPixmap, QFont
 from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QPoint, QEventLoop, QTimer, pyqtSlot, QRect, pyqtSignal, QObject
-from PyQt5.QtChart import QChart, QChartView, QBarSet, QBarSeries, QCategoryAxis, QValueAxis
+
 # Import AWS IoT related modules
 from awscrt import io, mqtt, auth, http
 from awsiot import mqtt_connection_builder
 from concurrent.futures import Future
 import queue  
 from datetime import datetime
-
-#from main import load_active
 
 USER_FILE = "users.json"
 # --- THEME COLORS (auto-inserted) ---
@@ -47,7 +45,6 @@ def load_all_settings() -> dict:
     except Exception:
         return {}
 
-
 def load_users():
     if not os.path.exists(USER_FILE):
         print(f"File {USER_FILE} does not exist, returning empty users")
@@ -74,33 +71,6 @@ def save_users(users):
     except Exception as e:
         print(f"Error saving users to {USER_FILE}: {e}")
         raise
-ACTIVE_FILE = "active.json"   # ← Add this if it's missing
-
-def load_active():
-    if os.path.exists(ACTIVE_FILE):
-        try:
-            with open(ACTIVE_FILE, "r") as f:
-                data = json.load(f)
-                # Convert lists back to sets for proper uniqueness
-                for key in data:
-                    data[key] = set(data[key])
-                return data
-        except Exception as e:
-            print(f"Error loading active.json: {e}")
-            return {}
-    else:
-        return {}  # Return empty dict if file doesn't exist yet
-
-
-def save_active(data):
-    # Convert sets to lists for JSON saving
-    serializable = {k: list(v) for k, v in data.items()}
-    try:
-        with open(ACTIVE_FILE, "w") as f:
-            json.dump(serializable, f, indent=4)
-    except Exception as e:
-        print(f"Error saving active.json: {e}")
-
 class OTPDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -442,6 +412,7 @@ class LoginWindow(QWidget):
         if email in self.users:
             QMessageBox.warning(self, "Error", "User already exists!")
             return
+        
         otp_dialog = OTPDialog(self)
         if otp_dialog.exec_() == QDialog.Accepted:
             try:
@@ -458,7 +429,7 @@ class LoginWindow(QWidget):
                 self.stack.setCurrentIndex(0)
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Failed to register user: {str(e)}")
-
+                
 # -------- Device Status Widget --------
 class DeviceStatusIndicator(QFrame):
     """Real-time device connection status indicator"""
@@ -470,7 +441,7 @@ class DeviceStatusIndicator(QFrame):
         
         # Connect to device status signal
         device_status_signal.status_changed.connect(self.update_status)
-    
+        
     def init_ui(self):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 6, 10, 6)
@@ -833,53 +804,41 @@ class Dashboard(QWidget):
     def create_dashboard_page(self):
         page = QWidget()
         main_layout = QVBoxLayout(page)
-        main_layout.setSpacing(15)
-        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(12, 12, 12, 12)
 
         card_style = """
             QFrame {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ffffff, stop:1 #fbfbfb);
-                border-radius: 16px;
-                border: none;
-                padding: 20px;
-                box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+                background-color: #FFFFFF;
+                border-radius: 14px;
+                border: 1px solid #e0e0e0;
+                padding: 15px;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.06);
             }
             QLabel {
-                font-size: 14px;
-                color: #5a6c7d;
+                font-size: 13px;
+                color: #4A4A4A;
                 font-family: 'Segoe UI', sans-serif;
-                padding: 4px;
-                font-weight: 500;
+                padding: 2px;
             }
         """
 
-        # Patient Info
+        # Patient Information
         patient_frame = QFrame()
         patient_frame.setStyleSheet(card_style)
-        patient_frame.setMinimumSize(150, 100)
+        patient_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         patient_layout = QFormLayout(patient_frame)
         patient_layout.setLabelAlignment(Qt.AlignRight)
         patient_layout.setFormAlignment(Qt.AlignHCenter)
         patient_layout.setSpacing(8)
-
-        name_label = QLabel(f"Name: {self.user_data.get('name', 'N/A')}")
-        contact_label = QLabel(f"Contact: {self.user_data.get('contact', 'N/A')}")
-        address_label = QLabel(f"Address: {self.user_data.get('address', 'N/A')}")
-        email_label = QLabel(f"Email: {self.user_data.get('email', 'N/A')}")
-
-        patient_layout.addRow(name_label)
-        patient_layout.addRow(contact_label)
-        patient_layout.addRow(address_label)
-        patient_layout.addRow(email_label)
-
-        patient_title = QLabel("Patient Info")
-        patient_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 12px; padding: 4px; font-family: 'Segoe UI', sans-serif;")
+        patient_layout.addRow("Serial No:", QLabel(f"({self.user_data.get('serial_no', 'N/A')})"))
+        patient_title = QLabel("Patient Information")
+        patient_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff6a00; margin-bottom: 8px; padding: 2px; font-family: 'Segoe UI', sans-serif;")
 
         # Stats
         stats_frame = QFrame()
         stats_frame.setStyleSheet(card_style)
-        stats_frame.setMinimumSize(150, 100)
-        
+        stats_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         stats_layout = QFormLayout(stats_frame)
         stats_layout.setLabelAlignment(Qt.AlignRight)
         stats_layout.setFormAlignment(Qt.AlignHCenter)
@@ -889,154 +848,69 @@ class Dashboard(QWidget):
         stats_layout.addRow("Therapy Usage:", self.therapy_usage_label)
         stats_layout.addRow("Machine Up Time:", self.machine_up_time_label)
         stats_title = QLabel("Usage Stats")
-        stats_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 12px; padding: 4px; font-family: 'Segoe UI', sans-serif;")
+        stats_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff6a00; margin-bottom: 8px; padding: 2px; font-family: 'Segoe UI', sans-serif;")
 
         # Alerts
         alerts_frame = QFrame()
         alerts_frame.setStyleSheet(card_style)
-        alerts_frame.setMinimumSize(150, 140)
+        alerts_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         alerts_layout = QVBoxLayout(alerts_frame)
-        alerts_layout.setSpacing(5)
+        alerts_layout.setSpacing(6)
         self.alert_labels = {}
         for setting in ["IMODE", "Leak Alert", "Sleep Mode", "Mask Type", "Ramp Time", "Humidifier"]:
             label = QLabel(f"{setting}: (OFF)")
+            label.setWordWrap(True)
             alerts_layout.addWidget(label)
             self.alert_labels[setting] = label
         alerts_title = QLabel("Alerts & Settings")
-        alerts_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 12px; padding: 4px; font-family: 'Segoe UI', sans-serif;")
+        alerts_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff6a00; margin-bottom: 8px; padding: 2px; font-family: 'Segoe UI', sans-serif;")
 
         # Report
         report_frame = QFrame()
         report_frame.setStyleSheet(card_style)
-        report_frame.setMinimumSize(150, 100)
+        report_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         report_layout = QVBoxLayout(report_frame)
         report_layout.setSpacing(8)
         calendar = QCalendarWidget()
         calendar.setGridVisible(True)
         calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
+        calendar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        table = QTableWidget(5, 5)
+        table.setHorizontalHeaderLabels(["Date", "Usage", "AHI", "Leaks", "Pressure"])
+        table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        for i in range(5):
+            for j in range(5):
+                table.setItem(i, j, QTableWidgetItem(f"Data {i+1}-{j+1}"))
+        pdf_btn = QPushButton("Export PDF")
+        pdf_btn.clicked.connect(self.export_pdf)
+        pdf_btn.setMinimumHeight(40)
+        csv_btn = QPushButton("Export CSV")
+        csv_btn.clicked.connect(self.export_csv)
+        csv_btn.setMinimumHeight(40)
+        btn_layout = QHBoxLayout()
+        btn_layout.addWidget(pdf_btn)
+        btn_layout.addWidget(csv_btn)
+        report_layout.addWidget(calendar)
+        report_layout.addWidget(table)
+        report_layout.addLayout(btn_layout)
+        report_title = QLabel("Report")
+        report_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff6a00; margin-bottom: 8px; padding: 2px; font-family: 'Segoe UI', sans-serif;")
         calendar.setStyleSheet("""
-            QCalendarWidget {
-                background-color: white;
+            QCalendarWidget QToolButton {
                 color: black;
-                font-family: 'Segoe UI', sans-serif;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QCalendarWidget QToolButton::menu-indicator {
+                image: none;
             }
             QCalendarWidget QWidget#qt_calendar_navigationbar {
                 background-color: white;
-                border: none;
-                min-height: 30px;
-            }
-            QCalendarWidget QToolButton {
-                color: black;
-                font-size: 17px;
-                font-weight: bold;
-                border: none;
-                background: none;
-                padding: 5px;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: #f0f0f0;
-            }
-            QCalendarWidget QToolButton:pressed {
-                background-color: #e0e0e0;
-            }
-            QCalendarWidget QWidget#qt_calendar_navigation_layout {
-                background-color: white;
-            }
-            QCalendarWidget QWidget#qt_calendar_weeknumber {
-                background-color: white;
-                color: black;
-                font-weight: bold;
-            }
-            QCalendarWidget QWidget#qt_calendar_monthcontainer {
-                background-color: white;
             }
             QCalendarWidget QAbstractItemView {
-                background-color: white;
                 color: black;
                 selection-background-color: #0078d7;
                 selection-color: white;
-                alternate-background-color: #fbfbfb;
-            }
-            QCalendarWidget QAbstractItemView::item                
-                padding: 5px;
-                border: none;
-            }
-            QCalendarWidget QAbstractItemView::item:selected {
-                background-color: #0078d7;
-                color: white;
-            }
-        """)
-        # Device Status
-        status_layout = QHBoxLayout()
-        status_layout.setSpacing(10)
-        status_layout.setAlignment(Qt.AlignLeft)
-        self.status_label = QLabel("●")
-        self.status_label.setStyleSheet("QLabel { font-size: 26px; color: #e74c3c; font-family: 'Segoe UI', sans-serif; }")
-        self.status_text = QLabel("Not Connected")
-        self.status_text.setStyleSheet("QLabel { font-size: 14px; color: #e74c3c; font-weight: 500; font-family: 'Segoe UI', sans-serif; padding-left: 8px; }")
-        status_layout.addWidget(self.status_label)
-        status_layout.addWidget(self.status_text) 
-        status_layout.addStretch()
-
-        status_frame = QFrame()
-        status_frame.setLayout(status_layout)
-        status_frame.setStyleSheet("QFrame { background: transparent; padding: 10px 0; }")
-
-        pdf_btn = QPushButton("Export PDF")
-        pdf_btn.clicked.connect(self.export_pdf)
-        csv_btn = QPushButton("Export CSV") 
-        csv_btn.clicked.connect(self.export_csv)    
-        btn_layout = QHBoxLayout()   
-        btn_layout.setSpacing(10)
-        btn_layout.addWidget(pdf_btn)
-        btn_layout.addWidget(csv_btn)
-
-        report_layout.addWidget(calendar)
-        report_layout.addWidget(status_frame)
-        report_layout.addLayout(btn_layout)
-
-        report_title = QLabel("Report")
-        report_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 12px; padding: 4px; font-family: 'Segoe UI', sans-serif;")
-
-        pdf_btn.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #27ae60, stop:1 #2ecc71);
-                color: white;
-                border-radius: 8px;
-                padding: 12px 24px;
-                font-weight: 600;
-                font-size: 14px;
-                font-family: 'Segoe UI', sans-serif;
-                border: none;
-                min-width: 120px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2ecc71, stop:1 #27ae60);
-                box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-            }
-            QPushButton:pressed {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #229954, stop:1 #1e8449);
-            }
-        """)
-        
-        csv_btn.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f39c12, stop:1 #e67e22);
-                color: white;
-                border-radius: 8px;
-                padding: 12px 24px;
-                font-weight: 600;
-                font-size: 14px;
-                font-family: 'Segoe UI', sans-serif;
-                border: none;
-                min-width: 120px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e67e22, stop:1 #f39c12);
-                box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
-            }
-            QPushButton:pressed {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #d35400, stop:1 #e67e22);
             }
         """)
 
@@ -1054,40 +928,40 @@ class Dashboard(QWidget):
         grid.addWidget(stats_frame, 1, 1, 2, 1)
         grid.addWidget(alerts_frame, 1, 2, 2, 1)
         grid.addWidget(report_frame, 1, 3, 2, 1)
-        # Adjust column stretch
+        # Column stretch
         grid.setColumnStretch(0, 2)
         grid.setColumnStretch(1, 2)
         grid.setColumnStretch(2, 2)
         grid.setColumnStretch(3, 3)
-
         grid.setRowStretch(1, 1)
         grid.setRowStretch(2, 1)
-
+ 
         main_layout.addLayout(grid)
 
         scroll = QScrollArea()
         scroll.setWidget(page)
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("""
-            QScrollArea { 
-                border: none; 
-                background: transparent; 
-            } 
-            QScrollBar:vertical { 
-                background: rgba(0,0,0,0.1); 
-                border-radius: 8px; 
-                width: 10px; 
-            } 
-            QScrollBar::handle:vertical { 
-                background: #1f6feb; 
-                border-radius: 5px; 
+            QScrollArea {
+                border: none;
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background: rgba(0,0,0,0.1);
+                border-radius: 8px;
+                width: 10px;
+            }
+            QScrollBar::handle:vertical {
+                background: #1f6feb;
+                border-radius: 5px;
                 min-height: 30px;
             }
-            QScrollBar::handle:vertical:hover { 
-                background: #ff6a00; 
+            QScrollBar::handle:vertical:hover {
+                background: #ff6a00;
             }
         """)
         return scroll
+
     def create_mode_page(self, mode_name, defaults, options_mode=False):
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -2214,10 +2088,9 @@ class Dashboard(QWidget):
 
 class AdminDashboard(Dashboard):
     def __init__(self, user_name="Admin", machine_serial="", login_window=None, user_data={}):
-        self.active_data = load_active() 
         super().__init__(user_name, machine_serial, login_window, user_data)
         self.machine_type_combo.currentTextChanged.connect(self.on_type_change)
-        self.machine_serial = machine_serial 
+        self.machine_serial = machine_serial
 
     def create_dashboard_page(self):
         page = QWidget()
@@ -2557,23 +2430,6 @@ class AdminDashboard(Dashboard):
 
         main_layout.addLayout(grid)
 
-        # Add Bar Chart below the grid in the empty space
-        chart_title = QLabel("Active Users (January - June)")
-        chart_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #1f2937; margin: 20px 0 10px 0; padding: 4px; font-family: 'Segoe UI', sans-serif;")
-        main_layout.addWidget(chart_title)
-
-        chart_frame = QFrame()
-        chart_frame.setStyleSheet(card_style)
-        chart_frame.setMinimumHeight(300)  
-        chart_layout = QVBoxLayout(chart_frame)
-        chart_layout.setContentsMargins(10, 10, 10, 10)
-
-        self.chart_view = self.create_bar_chart()
-        chart_layout.addWidget(self.chart_view)
-
-        main_layout.addWidget(chart_frame)
-        main_layout.addStretch()
-        main_layout.addStretch()
         scroll = QScrollArea()
         scroll.setWidget(page)
         scroll.setWidgetResizable(True)
@@ -2598,52 +2454,6 @@ class AdminDashboard(Dashboard):
         """)
         return scroll
 
-    def create_bar_chart(self):
-        months = ["January", "February", "March", "April", "May", "June"]
-        year = datetime.now().year
-        self.active_counts = [len(self.active_data.get(f"{year}-{str(m).zfill(2)}", set())) for m in range(1, 7)]
-        barset = QBarSet("Active Users")
-        for count in self.active_counts:
-            barset << count
-
-        series = QBarSeries()
-        series.append(barset)
-
-        chart = QChart()
-        chart.addSeries(series)
-        chart.setTitle("Number of Active Users per Month")
-        chart.setAnimationOptions(QChart.AllAnimations)
-
-        axis_x = QCategoryAxis()
-        for i, month in enumerate(months):
-            axis_x.append(month, i)
-        chart.addAxis(axis_x, Qt.AlignBottom)
-        series.attachAxis(axis_x)
-
-        axis_y = QValueAxis()
-        axis_y.setLabelFormat("%i")
-        chart.addAxis(axis_y, Qt.AlignLeft)
-        series.attachAxis(axis_y)
-        axis_y.setRange(0, max(5, max(self.active_counts) + 1))
-
-        chart_view = QChartView(chart)
-        chart_view.setRenderHint(QPainter.Antialiasing)
-        chart_view.setMinimumHeight(250)
-        return chart_view
-
-    def update_chart(self):
-        year = datetime.now().year
-        self.active_counts = [len(self.active_data.get(f"{year}-{str(m).zfill(2)}", set())) for m in range(1, 7)]
-
-        chart = self.chart_view.chart()
-        series = chart.series()[0]
-        barset = series.barSets()[0]
-        for i in range(6):
-            barset.replace(i, self.active_counts[i])
-
-        axis_y = chart.axes(Qt.Vertical)[0]
-        axis_y.setMax(max(5, max(self.active_counts) + 1))
-
     def on_type_change(self, text):
         self.machine_type = text
         self.update_button_states()
@@ -2664,8 +2474,7 @@ class AdminDashboard(Dashboard):
             if not api_data.get("success") or not api_data["data"].get("records"):
                 QMessageBox.warning(self, "Error", "No data found for this device.")
                 return
-            api_data = response.json()
-            
+
             latest_record = api_data["data"]["records"][0]
             device_type_api = latest_record.get("device_type", "BIPAP")
 
